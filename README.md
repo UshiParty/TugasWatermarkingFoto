@@ -15,19 +15,20 @@ Untuk memahami mengapa watermark bertahan pada QF tinggi tetapi rusak pada QF re
 ### Tahap 1 — Color Conversion
 
 Citra RGB dikonversi ke ruang warna YCbCr yang memisahkan informasi kecerahan (Y) dari informasi warna (Cb, Cr). Pemisahan ini memanfaatkan fakta bahwa mata manusia lebih sensitif terhadap kecerahan dibanding warna.
-<img width="813" height="234" alt="image" src="https://github.com/user-attachments/assets/9aa47efe-f4a6-443e-8de4-4dea23abccd9" />
+<img width="813" height="234" alt="image" src="https://github.com/user-attachments/assets/3cea341a-c0b0-48d1-abc1-dbf97eb94e8f" />
+
 
 
 ### Tahap 2 — Chroma Downsampling
 
 Kanal Cb dan Cr diperkecil dengan faktor 2 di kedua sumbu (pola 4:2:0), sehingga ukuran datanya menjadi seperempat dari aslinya. Kanal Y tidak diubah agar detail kecerahan tetap utuh. Tahap ini sudah memberi penghematan ukuran file yang signifikan tanpa banyak kehilangan kualitas yang terlihat.
-<img width="813" height="500" alt="image" src="https://github.com/user-attachments/assets/e2d0b64b-2d21-40cd-8915-e23f6e6523d4" />
+<img width="813" height="500" alt="image" src="https://github.com/user-attachments/assets/aa6879ff-50f6-40f5-8cf4-fb0ac9fd60c4" />
 
 
 ### Tahap 3 — Blocking
 
 Setiap kanal dipecah menjadi blok-blok 8×8 piksel. Semua tahap setelah ini bekerja per blok, tidak per piksel utuh. Skema watermarking yang digunakan dalam tugas ini juga menyisipkan watermark per blok 8×8 di kanal Y, sehingga ukuran blok JPEG dan ukuran blok watermark sengaja dibuat sama.
-<img width="813" height="406" alt="image" src="https://github.com/user-attachments/assets/c327aa10-4dc1-42a9-988a-caf9627b741b" />
+<img width="813" height="406" alt="image" src="https://github.com/user-attachments/assets/4b18eb1d-bc9a-4081-a72e-9f5f37a2739c" />
 
 
 ### Tahap 4 — Forward DCT
