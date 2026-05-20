@@ -1,4 +1,14 @@
-# TugasWatermarkingFoto
+# Tugas Watermarking Foto Wajah
+
+**Muhammad Fariz Difaurrahman — 18224028**
+
+---
+
+## Pendekatan
+
+Watermarking dilakukan di domain frekuensi menggunakan Discrete Cosine Transform (DCT) pada kanal Y (luminance) dari ruang warna YUV. Kanal U dan V dibiarkan tidak berubah sehingga citra tetap berwarna. Citra ber-watermark kemudian dikompresi JPEG dengan beberapa nilai QF, lalu watermark diekstrak kembali dan kemiripannya dengan watermark asli diukur menggunakan tiga metrik: Normalized Correlation (NC), Bit Error Rate (BER), dan Peak Signal-to-Noise Ratio (PSNR).
+
+## Proses Kompresi JPEG
 Untuk memahami mengapa watermark bertahan pada QF tinggi tetapi rusak pada QF rendah, perlu ditinjau tahapan kompresi JPEG. Kompresi JPEG terdiri dari tujuh tahapan yang dijalankan secara berurutan: color conversion, downsampling chroma, blocking, forward DCT, quantization, zig-zag scan, dan entropy coding. Tahap quantization adalah tahap yang menentukan tingkat kompresi (dan kerusakan watermark) karena di sinilah Quality Factor bekerja.
 
 ### Tahap 1 — Color Conversion
