@@ -50,8 +50,9 @@ Tahap ekstraksi menggunakan metode informed dengan kunci yang sama (seed = 50):
 3.	Pada setiap blok, DCT dihitung lalu koefisien [0,1] dibandingkan dengan [1,0]. Apabila [0,1] > [1,0] maka piksel watermark bernilai 1 (putih), apabila sebaliknya maka bernilai 0 (hitam).
 Pemilihan koefisien mid-frequency dilakukan karena pada percobaan awal penggunaan koefisien DC menghasilkan watermark yang tidak dapat dipulihkan setelah kompresi JPEG sekalipun pada QF tinggi. Koefisien mid-frequency cenderung lebih stabil terhadap quantization JPEG sehingga memberikan trade-off yang baik antara imperceptibility dan robustness.
 
-Kode Program
+# Kode Program
 Konfigurasi awal dan parameter watermarking:
+
 import os, math, random
 import numpy as np
 import cv2 as cv
@@ -72,6 +73,7 @@ NC_THRESHOLD = 0.5
 BER_THRESHOLD = 0.3
 
 Preprocessing citra wajah (BGR berwarna) dan watermark sebelum embedding:
+
 img_bgr = cv.imread(img_name)  # baca berwarna (BGR)
 if img_bgr.shape[:2] != (IMG_SIZE, IMG_SIZE):
     img_bgr = cv.resize(img_bgr, (IMG_SIZE, IMG_SIZE))
@@ -81,6 +83,7 @@ wm = cv.resize(wm, (W2, W1), interpolation=cv.INTER_NEAREST)
 _, wm = cv.threshold(wm, 127, 255, cv.THRESH_BINARY)
 
 Fungsi pemilihan blok pseudorandom dengan seed sebagai kunci. Fungsi yang sama dipanggil saat embedding maupun ekstraksi sehingga urutan blok yang dipilih identik.
+
 def _select_blocks(total_blocks, needed, seed):
     random.seed(seed)
     used = set()
@@ -94,6 +97,7 @@ def _select_blocks(total_blocks, needed, seed):
     return selected
 
 Fungsi embedding watermark. Citra BGR dikonversi ke YUV, watermark disisipkan pada kanal Y, kemudian dikonversi balik ke BGR berwarna.
+
 def watermark_image(img_bgr, wm):
     # BGR -> YUV, pisahkan kanal Y (luminance)
     yuv = cv.cvtColor(img_bgr, cv.COLOR_BGR2YUV)
@@ -137,6 +141,7 @@ def watermark_image(img_bgr, wm):
     return cv.cvtColor(yuv_watermarked, cv.COLOR_YUV2BGR)
 
 Fungsi ekstraksi watermark. Ambil kanal Y dari citra ber-watermark lalu bandingkan koefisien [0,1] dan [1,0] di setiap blok terpilih.
+
 def extract_watermark(img_bgr, ext_name):
     h, w = img_bgr.shape[:2]
     if h != IMG_SIZE or w != IMG_SIZE:
@@ -174,6 +179,7 @@ def extract_watermark(img_bgr, ext_name):
     return wm_extracted
 
 Tiga fungsi metrik kuantitatif:
+
 def psnr(img1, img2):
     mse = np.mean((img1.astype(np.float64) - img2.astype(np.float64)) ** 2)
     if mse == 0:
@@ -193,6 +199,7 @@ def BER(wm1, wm2):
     return float(np.sum(wm1_bin != wm2_bin)) / wm1_bin.size
 
 Loop evaluasi terhadap beberapa nilai QF JPEG. Citra ber-watermark disimpan dengan parameter cv.IMWRITE_JPEG_QUALITY, lalu dibaca kembali dan watermark-nya diekstrak untuk dihitung metriknya.
+
 for qf in QUALITY_FACTORS:
     compressed_path = f"compressed/compressed_qf_{qf}.jpg"
     cv.imwrite(compressed_path, watermarked_bgr,
