@@ -1,6 +1,6 @@
 # Tugas Watermarking Foto Wajah
 
-**Muhammad Fariz Difaurrahman — 18224028**
+**Muhammad Fariz Difaurrahman | 18224028**
 
 ---
 
@@ -9,7 +9,8 @@
 Watermarking dilakukan di domain frekuensi menggunakan Discrete Cosine Transform (DCT) pada kanal Y (luminance) dari ruang warna YUV. Kanal U dan V dibiarkan tidak berubah sehingga citra tetap berwarna. Citra ber-watermark kemudian dikompresi JPEG dengan beberapa nilai QF, lalu watermark diekstrak kembali dan kemiripannya dengan watermark asli diukur menggunakan tiga metrik: Normalized Correlation (NC), Bit Error Rate (BER), dan Peak Signal-to-Noise Ratio (PSNR).
 
 ## Proses Kompresi JPEG
-Untuk memahami mengapa watermark bertahan pada QF tinggi tetapi rusak pada QF rendah, perlu ditinjau tahapan kompresi JPEG. Kompresi JPEG terdiri dari tujuh tahapan yang dijalankan secara berurutan: color conversion, downsampling chroma, blocking, forward DCT, quantization, zig-zag scan, dan entropy coding. Tahap quantization adalah tahap yang menentukan tingkat kompresi (dan kerusakan watermark) karena di sinilah Quality Factor bekerja.
+
+Untuk memahami mengapa watermark bertahan pada QF tinggi tetapi rusak pada QF rendah, perlu ditinjau tahapan kompresi JPEG. Kompresi JPEG terdiri dari tujuh tahapan yang dijalankan secara berurutan: color conversion, downsampling chroma, blocking, forward DCT, quantization, zig-zag scan, dan entropy coding. Tahap quantization adalah tahap yang menentukan tingkat kompresi karena di sinilah Quality Factor bekerja.
 
 ### Tahap 1 — Color Conversion
 
@@ -31,29 +32,28 @@ Setiap kanal dipecah menjadi blok-blok 8×8 piksel. Semua tahap setelah ini beke
 
 ### Tahap 4 — Forward DCT
 
-Setiap blok 8×8 ditransformasikan dari domain spasial (nilai piksel) ke domain frekuensi menggunakan Discrete Cosine Transform. Hasilnya juga matriks 8×8, dengan koefisien di sudut kiri-atas mewakili komponen DC (rata-rata blok), koefisien di sekitarnya mewakili frekuensi rendah (perubahan halus), dan koefisien di sudut kanan-bawah mewakili frekuensi tinggi (detail tajam dan tepi).
+Setiap blok 8×8 ditransformasikan dari domain spasial ke domain frekuensi menggunakan Discrete Cosine Transform. Hasilnya juga matriks 8×8, dengan koefisien di sudut kiri-atas mewakili komponen DC, koefisien di sekitarnya mewakili frekuensi rendah , dan koefisien di sudut kanan-bawah mewakili frekuensi tinggi.
 <img width="813" height="273" alt="image" src="https://github.com/user-attachments/assets/57853bf4-227f-44f5-bf71-ae5379c3f630" />
 
 
 ### Tahap 5 — Quantization
 
-Setiap koefisien DCT dibagi dengan nilai yang sesuai pada tabel quantization Q, lalu hasilnya dibulatkan ke integer. Tahap inilah yang membuang sebagian informasi dan tidak dapat dibalik. Quality Factor (QF) menentukan seberapa "kasar" tabel Q: QF tinggi menghasilkan nilai Q kecil sehingga divisi-nya ringan dan banyak koefisien tetap bertahan, sementara QF rendah menghasilkan nilai Q besar sehingga banyak koefisien dibulatkan menjadi nol. Inilah penyebab utama mengapa watermark rusak pada QF rendah: koefisien mid-frequency yang menjadi pembawa watermark ikut dibulatkan ke nol.
+Setiap koefisien DCT dibagi dengan nilai yang sesuai pada tabel quantization Q, lalu hasilnya dibulatkan ke integer. Tahap ini membuang sebagian informasi dan tidak dapat dibalik. Quality Factor (QF) menentukan seberapa "kasar" tabel Q. Ini penyebab utama mengapa watermark rusak pada QF rendah.
 <img width="813" height="531" alt="image" src="https://github.com/user-attachments/assets/5b2dd068-0fd4-46c4-8b97-67060889bfd8" />
 
 ### Tahap 6 — Zig-zag Scan
 
-Matriks koefisien hasil quantization yang berukuran 8×8 dibaca dalam pola zig-zag mulai dari kiri-atas ke kanan-bawah, sehingga menjadi urutan satu dimensi berisi 64 nilai. Urutan ini disusun sedemikian rupa agar koefisien frekuensi rendah berada di awal dan koefisien frekuensi tinggi (yang banyak bernilai nol setelah quantization) berada di akhir. Akibatnya, urutan biasanya diakhiri oleh deretan panjang nilai nol yang dapat dipadatkan dengan penanda End-of-Block.
+Matriks koefisien hasil quantization yang berukuran 8×8 dibaca dalam pola zig-zag mulai dari kiri-atas ke kanan-bawah, sehingga menjadi urutan satu dimensi berisi 64 nilai.
 <img width="813" height="313" alt="image" src="https://github.com/user-attachments/assets/dc45ce6c-fbf9-4368-8462-48809b0edadc" />
 
 
 ### Tahap 7 — Entropy Coding
 
-Urutan angka dari tahap zig-zag dikompresi lagi menggunakan Huffman coding. Nilai yang sering muncul (seperti 0 dan ±1) diberi kode bit yang pendek, sedangkan nilai yang jarang muncul diberi kode bit yang panjang. Tahap ini bersifat lossless, jadi tidak menambah kerusakan watermark.
+Urutan angka dari tahap zig-zag dikompresi lagi menggunakan Huffman coding. Tahap ini bersifat lossless, jadi tidak menambah kerusakan watermark.
 
 <img width="813" height="438" alt="image" src="https://github.com/user-attachments/assets/0ea0998b-1e30-444b-9876-9845f506d4a4" />
 
-
-Dari tujuh tahap di atas, hanya tahap 5 (quantization) yang sifatnya lossy alias merusak informasi. Tahap inilah yang menentukan tingkat kerusakan watermark. Saat QF turun, lebih banyak koefisien DCT dibulatkan menjadi nol, termasuk pasangan koefisien mid-frequency [0,1] dan [1,0] yang menjadi pembawa watermark dalam skema yang digunakan. Ketika kedua koefisien ini sama-sama menjadi nol, perbandingan yang menjadi dasar ekstraksi tidak dapat lagi menghasilkan jawaban yang benar, dan watermark menjadi rusak.
+Dari tujuh tahap di atas, hanya tahap 5 (quantization) yang sifatnya lossy alias merusak informasi. Tahap inilah yang menentukan tingkat kerusakan watermark.
 
 ## Input
 
@@ -82,7 +82,7 @@ Menggunakan metode informed dengan kunci yang sama (seed = 50):
 2. Urutan blok yang dipilih saat embedding direproduksi secara identik dengan menggunakan seed yang sama.
 3. Pada setiap blok, DCT dihitung lalu koefisien `[0,1]` dibandingkan dengan `[1,0]`. Apabila `[0,1] > [1,0]` maka piksel watermark bernilai 1 (putih), apabila sebaliknya maka bernilai 0 (hitam).
 
-Pemilihan koefisien mid-frequency dilakukan karena pada percobaan awal penggunaan koefisien DC menghasilkan watermark yang tidak dapat dipulihkan setelah kompresi JPEG sekalipun pada QF tinggi. Koefisien mid-frequency cenderung lebih stabil terhadap quantization JPEG sehingga memberikan trade-off yang baik antara imperceptibility dan robustness.
+Pemilihan koefisien mid-frequency dilakukan karena pada percobaan awal penggunaan koefisien DC menghasilkan watermark yang tidak dapat dipulihkan setelah kompresi JPEG sekalipun pada QF tinggi. Koefisien mid-frequency cenderung lebih stabil terhadap quantization JPEG.
 
 ## Kode Program
 
@@ -293,7 +293,7 @@ Grafik nilai NC dan BER terhadap QF disajikan pada gambar berikut.
 
 Pada QF 90, 70, 50, dan 30, watermark masih dapat diekstrak dengan baik karena nilai NC tetap di atas 0,5 dan BER di bawah 0,3. Bentuk watermark berupa logo burung Twitter masih dapat dikenali secara visual pada keempat QF tersebut, meskipun mulai muncul gangguan pada area tepi seiring turunnya QF.
 
-Pada QF 10, nilai NC turun menjadi 0,345 yang sudah di bawah threshold dan BER mencapai 0,370 yang sudah melampaui batas 0,3. Pada titik ini sebagian besar bit watermark sudah salah dan logo burung tidak lagi dapat dikenali secara visual, sehingga watermark dianggap rusak. Pada QF ini citra wajah juga mulai memperlihatkan blocking artifact yang khas dari kompresi JPEG agresif.
+Pada QF 10, nilai NC turun menjadi 0,345 yang sudah di bawah threshold dan BER mencapai 0,370 yang sudah melampaui batas 0,3. Pada titik ini sebagian besar bit watermark sudah salah dan logo burung tidak lagi dapat dikenali secara visual, sehingga watermark dianggap rusak.
 
 Pada QF 5 dan 1, baik NC maupun BER tetap melewati threshold dan pola yang muncul pada hasil ekstraksi sudah berupa noise acak tanpa bentuk yang dikenali. Citra wajah pada QF 1 sudah mengalami posterisasi dengan blocking yang sangat jelas.
 
