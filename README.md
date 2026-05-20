@@ -12,43 +12,43 @@ Watermarking dilakukan di domain frekuensi menggunakan Discrete Cosine Transform
 
 Untuk memahami mengapa watermark bertahan pada QF tinggi tetapi rusak pada QF rendah, perlu ditinjau tahapan kompresi JPEG. Kompresi JPEG terdiri dari tujuh tahapan yang dijalankan secara berurutan: color conversion, downsampling chroma, blocking, forward DCT, quantization, zig-zag scan, dan entropy coding. Tahap quantization adalah tahap yang menentukan tingkat kompresi karena di sinilah Quality Factor bekerja.
 
-### Tahap 1 — Color Conversion
+### Tahap 1 Color Conversion
 
 Citra RGB dikonversi ke ruang warna YCbCr yang memisahkan informasi kecerahan (Y) dari informasi warna (Cb, Cr). Pemisahan ini memanfaatkan fakta bahwa mata manusia lebih sensitif terhadap kecerahan dibanding warna.
 <img width="813" height="234" alt="image" src="https://github.com/user-attachments/assets/3cea341a-c0b0-48d1-abc1-dbf97eb94e8f" />
 
 
 
-### Tahap 2 — Chroma Downsampling
+### Tahap 2 Chroma Downsampling
 
 Kanal Cb dan Cr diperkecil dengan faktor 2 di kedua sumbu (pola 4:2:0), sehingga ukuran datanya menjadi seperempat dari aslinya. Kanal Y tidak diubah agar detail kecerahan tetap utuh. Tahap ini sudah memberi penghematan ukuran file yang signifikan tanpa banyak kehilangan kualitas yang terlihat.
 <img width="813" height="500" alt="image" src="https://github.com/user-attachments/assets/aa6879ff-50f6-40f5-8cf4-fb0ac9fd60c4" />
 
 
-### Tahap 3 — Blocking
+### Tahap 3 Blocking
 
 Setiap kanal dipecah menjadi blok-blok 8×8 piksel. Semua tahap setelah ini bekerja per blok, tidak per piksel utuh. Skema watermarking yang digunakan dalam tugas ini juga menyisipkan watermark per blok 8×8 di kanal Y, sehingga ukuran blok JPEG dan ukuran blok watermark sengaja dibuat sama.
 <img width="813" height="406" alt="image" src="https://github.com/user-attachments/assets/4b18eb1d-bc9a-4081-a72e-9f5f37a2739c" />
 
 
-### Tahap 4 — Forward DCT
+### Tahap 4 Forward DCT
 
 Setiap blok 8×8 ditransformasikan dari domain spasial ke domain frekuensi menggunakan Discrete Cosine Transform. Hasilnya juga matriks 8×8, dengan koefisien di sudut kiri-atas mewakili komponen DC, koefisien di sekitarnya mewakili frekuensi rendah , dan koefisien di sudut kanan-bawah mewakili frekuensi tinggi.
 <img width="813" height="273" alt="image" src="https://github.com/user-attachments/assets/57853bf4-227f-44f5-bf71-ae5379c3f630" />
 
 
-### Tahap 5 — Quantization
+### Tahap 5 Quantization
 
 Setiap koefisien DCT dibagi dengan nilai yang sesuai pada tabel quantization Q, lalu hasilnya dibulatkan ke integer. Tahap ini membuang sebagian informasi dan tidak dapat dibalik. Quality Factor (QF) menentukan seberapa "kasar" tabel Q. Ini penyebab utama mengapa watermark rusak pada QF rendah.
 <img width="813" height="531" alt="image" src="https://github.com/user-attachments/assets/5b2dd068-0fd4-46c4-8b97-67060889bfd8" />
 
-### Tahap 6 — Zig-zag Scan
+### Tahap 6 Zig-zag Scan
 
 Matriks koefisien hasil quantization yang berukuran 8×8 dibaca dalam pola zig-zag mulai dari kiri-atas ke kanan-bawah, sehingga menjadi urutan satu dimensi berisi 64 nilai.
 <img width="813" height="313" alt="image" src="https://github.com/user-attachments/assets/dc45ce6c-fbf9-4368-8462-48809b0edadc" />
 
 
-### Tahap 7 — Entropy Coding
+### Tahap 7 Entropy Coding
 
 Urutan angka dari tahap zig-zag dikompresi lagi menggunakan Huffman coding. Tahap ini bersifat lossless, jadi tidak menambah kerusakan watermark.
 
