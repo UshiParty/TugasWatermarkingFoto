@@ -1,1 +1,4 @@
 # TugasWatermarkingFoto
+Untuk memahami mengapa watermark bertahan pada QF tinggi tetapi rusak pada QF rendah, perlu ditinjau tahapan kompresi JPEG. Kompresi JPEG terdiri dari tujuh tahapan yang dijalankan secara berurutan: color conversion, downsampling chroma, blocking, forward DCT, quantization, zig-zag scan, dan entropy coding. Tahap quantization adalah tahap yang menentukan tingkat kompresi (dan kerusakan watermark) karena di sinilah Quality Factor bekerja.
+Tahap 1: Color Conversion. Citra RGB dikonversi ke ruang warna YCbCr yang memisahkan informasi kecerahan (Y) dari informasi warna (Cb, Cr). Pemisahan ini memanfaatkan fakta bahwa mata manusia lebih sensitif terhadap kecerahan dibanding warna.
+<img width="813" height="234" alt="image" src="https://github.com/user-attachments/assets/9aa47efe-f4a6-443e-8de4-4dea23abccd9" />
