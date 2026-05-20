@@ -50,3 +50,160 @@ Tahap ekstraksi menggunakan metode informed dengan kunci yang sama (seed = 50):
 3.	Pada setiap blok, DCT dihitung lalu koefisien [0,1] dibandingkan dengan [1,0]. Apabila [0,1] > [1,0] maka piksel watermark bernilai 1 (putih), apabila sebaliknya maka bernilai 0 (hitam).
 Pemilihan koefisien mid-frequency dilakukan karena pada percobaan awal penggunaan koefisien DC menghasilkan watermark yang tidak dapat dipulihkan setelah kompresi JPEG sekalipun pada QF tinggi. Koefisien mid-frequency cenderung lebih stabil terhadap quantization JPEG sehingga memberikan trade-off yang baik antara imperceptibility dan robustness.
 
+Kode Program
+Konfigurasi awal dan parameter watermarking:
+import os, math, random
+import numpy as np
+import cv2 as cv
+import matplotlib.pyplot as plt
+ 
+img_name = "image1.jpg"
+wm_name = "watermark2.jpg"
+KEY = 50           # seed pseudorandom (kunci watermark)
+BS = 8             # block size 8x8
+W1, W2 = 64, 64    # ukuran watermark
+ALPHA = 15.0       # strength factor
+B_CUT = 50         # margin tepi
+IMG_SIZE = 1000
+COEF_A = (0, 1)    # koefisien mid-frequency pertama
+COEF_B = (1, 0)    # koefisien mid-frequency kedua
+QUALITY_FACTORS = [90, 70, 50, 30, 10, 5, 1]
+NC_THRESHOLD = 0.5
+BER_THRESHOLD = 0.3
+
+Preprocessing citra wajah (BGR berwarna) dan watermark sebelum embedding:
+img_bgr = cv.imread(img_name)  # baca berwarna (BGR)
+if img_bgr.shape[:2] != (IMG_SIZE, IMG_SIZE):
+    img_bgr = cv.resize(img_bgr, (IMG_SIZE, IMG_SIZE))
+ 
+wm = cv.imread(wm_name, 0)
+wm = cv.resize(wm, (W2, W1), interpolation=cv.INTER_NEAREST)
+_, wm = cv.threshold(wm, 127, 255, cv.THRESH_BINARY)
+
+Fungsi pemilihan blok pseudorandom dengan seed sebagai kunci. Fungsi yang sama dipanggil saat embedding maupun ekstraksi sehingga urutan blok yang dipilih identik.
+def _select_blocks(total_blocks, needed, seed):
+    random.seed(seed)
+    used = set()
+    selected = []
+    while len(selected) < needed:
+        x = random.randint(0, total_blocks - 1)
+        if x in used:
+            continue
+        used.add(x)
+        selected.append(x)
+    return selected
+
+Fungsi embedding watermark. Citra BGR dikonversi ke YUV, watermark disisipkan pada kanal Y, kemudian dikonversi balik ke BGR berwarna.
+def watermark_image(img_bgr, wm):
+    # BGR -> YUV, pisahkan kanal Y (luminance)
+    yuv = cv.cvtColor(img_bgr, cv.COLOR_BGR2YUV)
+    y, u, v = cv.split(yuv)
+ 
+    h, w = y.shape
+    area_h = h - B_CUT * 2
+    area_w = w - B_CUT * 2
+    n_blocks_w = area_w // BS
+    total_blocks = (area_h // BS) * n_blocks_w
+    needed = W1 * W2
+ 
+    y_f = y.astype(np.float32)
+    final = y_f.copy()
+    wm_bin = (wm >= 127).astype(np.uint8)
+    selected = _select_blocks(total_blocks, needed, KEY)
+ 
+    for bit_idx in range(needed):
+        block_idx = selected[bit_idx]
+        bi = block_idx // n_blocks_w
+        bj = block_idx % n_blocks_w
+        ind_i = bi * BS + B_CUT
+        ind_j = bj * BS + B_CUT
+ 
+        block = final[ind_i:ind_i+BS, ind_j:ind_j+BS]
+        dct_block = cv.dct(block)
+ 
+        wm_bit = wm_bin[bit_idx // W2, bit_idx % W2]
+        if wm_bit == 1:
+            dct_block[COEF_A] += ALPHA
+            dct_block[COEF_B] -= ALPHA
+        else:
+            dct_block[COEF_A] -= ALPHA
+            dct_block[COEF_B] += ALPHA
+ 
+        final[ind_i:ind_i+BS, ind_j:ind_j+BS] = cv.idct(dct_block)
+ 
+    # Gabungkan kembali Y' + U + V, lalu YUV -> BGR
+    y_watermarked = np.clip(final, 0, 255).astype(np.uint8)
+    yuv_watermarked = cv.merge((y_watermarked, u, v))
+    return cv.cvtColor(yuv_watermarked, cv.COLOR_YUV2BGR)
+
+Fungsi ekstraksi watermark. Ambil kanal Y dari citra ber-watermark lalu bandingkan koefisien [0,1] dan [1,0] di setiap blok terpilih.
+def extract_watermark(img_bgr, ext_name):
+    h, w = img_bgr.shape[:2]
+    if h != IMG_SIZE or w != IMG_SIZE:
+        img_bgr = cv.resize(img_bgr, (IMG_SIZE, IMG_SIZE))
+ 
+    # Ambil kanal Y, lakukan DCT pada blok yang sama
+    yuv = cv.cvtColor(img_bgr, cv.COLOR_BGR2YUV)
+    y, _, _ = cv.split(yuv)
+ 
+    area_h = IMG_SIZE - B_CUT * 2
+    area_w = IMG_SIZE - B_CUT * 2
+    n_blocks_w = area_w // BS
+    total_blocks = (area_h // BS) * n_blocks_w
+    needed = W1 * W2
+ 
+    y_f = y.astype(np.float32)
+    selected = _select_blocks(total_blocks, needed, KEY)
+    wm_extracted = np.zeros((W1, W2), dtype=np.uint8)
+ 
+    for bit_idx in range(needed):
+        block_idx = selected[bit_idx]
+        bi = block_idx // n_blocks_w
+        bj = block_idx % n_blocks_w
+        ind_i = bi * BS + B_CUT
+        ind_j = bj * BS + B_CUT
+ 
+        block = y_f[ind_i:ind_i+BS, ind_j:ind_j+BS]
+        dct_block = cv.dct(block)
+ 
+        if dct_block[COEF_A] > dct_block[COEF_B]:
+            wm_extracted[bit_idx // W2, bit_idx % W2] = 255
+        else:
+            wm_extracted[bit_idx // W2, bit_idx % W2] = 0
+ 
+    return wm_extracted
+
+Tiga fungsi metrik kuantitatif:
+def psnr(img1, img2):
+    mse = np.mean((img1.astype(np.float64) - img2.astype(np.float64)) ** 2)
+    if mse == 0:
+        return 100.0
+    return 20 * math.log10(255.0 / math.sqrt(mse))
+ 
+def NCC(wm1, wm2):
+    wm1_bin = (wm1 >= 127).astype(np.float64)
+    wm2_bin = (wm2 >= 127).astype(np.float64)
+    num = np.sum(wm1_bin * wm2_bin)
+    den = np.sqrt(np.sum(wm1_bin ** 2) * np.sum(wm2_bin ** 2))
+    return float(num / den) if den != 0 else 0.0
+ 
+def BER(wm1, wm2):
+    wm1_bin = (wm1 >= 127).astype(np.uint8)
+    wm2_bin = (wm2 >= 127).astype(np.uint8)
+    return float(np.sum(wm1_bin != wm2_bin)) / wm1_bin.size
+
+Loop evaluasi terhadap beberapa nilai QF JPEG. Citra ber-watermark disimpan dengan parameter cv.IMWRITE_JPEG_QUALITY, lalu dibaca kembali dan watermark-nya diekstrak untuk dihitung metriknya.
+for qf in QUALITY_FACTORS:
+    compressed_path = f"compressed/compressed_qf_{qf}.jpg"
+    cv.imwrite(compressed_path, watermarked_bgr,
+               [int(cv.IMWRITE_JPEG_QUALITY), qf])
+ 
+    img_compressed = cv.imread(compressed_path)  # BGR berwarna
+    wm_extracted = extract_watermark(img_compressed,
+                                     f"compressed/extracted_qf_{qf}.jpg")
+ 
+    nc = NCC(wm_original, wm_extracted)
+    ber = BER(wm_original, wm_extracted)
+    psnr_c = psnr(watermarked_bgr, img_compressed)
+    status = "VALID" if (nc >= NC_THRESHOLD and ber <= BER_THRESHOLD) else "RUSAK"
+
