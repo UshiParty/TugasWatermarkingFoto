@@ -53,34 +53,34 @@ Pemilihan koefisien mid-frequency dilakukan karena pada percobaan awal penggunaa
 # Kode Program
 Konfigurasi awal dan parameter watermarking:
 
-import os, math, random
-import numpy as np
-import cv2 as cv
-import matplotlib.pyplot as plt
- 
-img_name = "image1.jpg"
-wm_name = "watermark2.jpg"
-KEY = 50           # seed pseudorandom (kunci watermark)
-BS = 8             # block size 8x8
-W1, W2 = 64, 64    # ukuran watermark
-ALPHA = 15.0       # strength factor
-B_CUT = 50         # margin tepi
-IMG_SIZE = 1000
-COEF_A = (0, 1)    # koefisien mid-frequency pertama
-COEF_B = (1, 0)    # koefisien mid-frequency kedua
-QUALITY_FACTORS = [90, 70, 50, 30, 10, 5, 1]
-NC_THRESHOLD = 0.5
-BER_THRESHOLD = 0.3
+ import os, math, random
+ import numpy as np
+ import cv2 as cv
+ import matplotlib.pyplot as plt
+  
+ img_name = "image1.jpg"
+ wm_name = "watermark2.jpg"
+ KEY = 50           # seed pseudorandom (kunci watermark)
+ BS = 8             # block size 8x8
+ W1, W2 = 64, 64    # ukuran watermark
+ ALPHA = 15.0       # strength factor
+ B_CUT = 50         # margin tepi
+ IMG_SIZE = 1000
+ COEF_A = (0, 1)    # koefisien mid-frequency pertama
+ COEF_B = (1, 0)    # koefisien mid-frequency kedua
+ QUALITY_FACTORS = [90, 70, 50, 30, 10, 5, 1]
+ NC_THRESHOLD = 0.5
+ BER_THRESHOLD = 0.3
 
 Preprocessing citra wajah (BGR berwarna) dan watermark sebelum embedding:
 
-img_bgr = cv.imread(img_name)  # baca berwarna (BGR)
-if img_bgr.shape[:2] != (IMG_SIZE, IMG_SIZE):
-    img_bgr = cv.resize(img_bgr, (IMG_SIZE, IMG_SIZE))
- 
-wm = cv.imread(wm_name, 0)
-wm = cv.resize(wm, (W2, W1), interpolation=cv.INTER_NEAREST)
-_, wm = cv.threshold(wm, 127, 255, cv.THRESH_BINARY)
+ img_bgr = cv.imread(img_name)  # baca berwarna (BGR)
+ if img_bgr.shape[:2] != (IMG_SIZE, IMG_SIZE):
+     img_bgr = cv.resize(img_bgr, (IMG_SIZE, IMG_SIZE))
+  
+ wm = cv.imread(wm_name, 0)
+ wm = cv.resize(wm, (W2, W1), interpolation=cv.INTER_NEAREST)
+ _, wm = cv.threshold(wm, 127, 255, cv.THRESH_BINARY)
 
 Fungsi pemilihan blok pseudorandom dengan seed sebagai kunci. Fungsi yang sama dipanggil saat embedding maupun ekstraksi sehingga urutan blok yang dipilih identik.
 
