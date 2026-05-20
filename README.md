@@ -30,3 +30,23 @@ Tahap 7: Entropy Coding. Urutan angka dari tahap zig-zag dikompresi lagi menggun
 
 
 Dari tujuh tahap di atas, hanya tahap 5 (quantization) yang sifatnya lossy alias merusak informasi. Tahap inilah yang menentukan tingkat kerusakan watermark. Saat QF turun, lebih banyak koefisien DCT dibulatkan menjadi nol, termasuk pasangan koefisien mid-frequency [0,1] dan [1,0] yang menjadi pembawa watermark dalam skema yang digunakan. Ketika kedua koefisien ini sama-sama menjadi nol, perbandingan yang menjadi dasar ekstraksi tidak dapat lagi menghasilkan jawaban yang benar, dan watermark menjadi rusak.
+
+# Input
+Foto wajah disimpan sebagai image1.jpg dan watermark biner disimpan sebagai watermark2.jpg.
+<img width="719" height="359" alt="image" src="https://github.com/user-attachments/assets/29db9783-82cc-473d-9bdc-79dda7e5f37d" />
+# Implementasi
+Implementasi ditulis dalam Python dan dijalankan di Visual Studio Code dengan library OpenCV, NumPy, dan Matplotlib. Seluruh kode disusun dalam satu file code.py.
+Tahap embedding dijalankan sebagai berikut:
+1.	Foto wajah dibaca sebagai citra BGR berwarna lalu diubah ukurannya menjadi 1000×1000 piksel agar pembagian blok 8×8 menjadi seragam.
+2.	Citra dikonversi dari BGR ke ruang warna YUV. Kanal Y (luminance) dipisahkan untuk diproses, sedangkan kanal U dan V disimpan untuk digabung kembali setelah embedding selesai.
+3.	Watermark di-resize menjadi 64×64 piksel kemudian dibinerisasi dengan threshold 127 sehingga setiap piksel hanya bernilai 0 (hitam) atau 1 (putih).
+4.	Kanal Y dibagi menjadi blok-blok 8×8 dengan margin tepi 50 piksel yang dilewati untuk menghindari distorsi pada area tepi.
+5.	Sebanyak 4096 blok (sesuai jumlah piksel watermark 64×64) dipilih secara acak menggunakan pseudorandom generator dengan seed = 50 sebagai kunci.
+6.	Setiap blok terpilih ditransformasikan ke domain frekuensi dengan DCT. Penyisipan bit dilakukan dengan memodifikasi pasangan koefisien mid-frequency, yaitu [0,1] dan [1,0], menggunakan strength factor alpha = 15. Untuk bit 1, [0,1] dinaikkan dan [1,0] diturunkan; untuk bit 0, sebaliknya.
+7.	Blok dikembalikan ke domain spasial dengan IDCT, kanal Y yang telah dimodifikasi digabung kembali dengan kanal U dan V, lalu YUV dikonversi balik ke BGR sebagai citra berwarna.
+Tahap ekstraksi menggunakan metode informed dengan kunci yang sama (seed = 50):
+1.	Citra ber-watermark dikonversi ke YUV dan kanal Y diambil sebagai sumber ekstraksi.
+2.	Urutan blok yang dipilih saat embedding direproduksi secara identik dengan menggunakan seed yang sama.
+3.	Pada setiap blok, DCT dihitung lalu koefisien [0,1] dibandingkan dengan [1,0]. Apabila [0,1] > [1,0] maka piksel watermark bernilai 1 (putih), apabila sebaliknya maka bernilai 0 (hitam).
+Pemilihan koefisien mid-frequency dilakukan karena pada percobaan awal penggunaan koefisien DC menghasilkan watermark yang tidak dapat dipulihkan setelah kompresi JPEG sekalipun pada QF tinggi. Koefisien mid-frequency cenderung lebih stabil terhadap quantization JPEG sehingga memberikan trade-off yang baik antara imperceptibility dan robustness.
+
