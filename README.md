@@ -214,3 +214,37 @@ for qf in QUALITY_FACTORS:
     psnr_c = psnr(watermarked_bgr, img_compressed)
     status = "VALID" if (nc >= NC_THRESHOLD and ber <= BER_THRESHOLD) else "RUSAK"
 
+Tiga metrik kuantitatif digunakan untuk menilai kualitas watermark hasil ekstraksi pada tiap QF:
+•	Normalized Correlation (NC) mengukur kemiripan pola antara watermark asli dengan hasil ekstraksi dengan rentang nilai 0 sampai 1.
+•	Bit Error Rate (BER) menghitung proporsi bit watermark yang nilainya berbeda dari aslinya.
+•	Peak Signal-to-Noise Ratio (PSNR) mengukur kekuatan sinyal citra asli terhadap derau yang diakibatkan kompresi dalam satuan desibel.
+Threshold yang digunakan untuk menyatakan watermark masih valid adalah NC ≥ 0,5 dan BER ≤ 0,3.
+Pengujian dilakukan pada QF 90, 70, 50, 30, 10, 5, dan 1. Hasil pengujian disajikan pada tabel berikut.
+QF	Ukuran (KB)	NC	BER	PSNR (dB)	Status
+90	177.82	0.682	0.192	41.67	VALID
+70	96.45	0.673	0.200	37.63	VALID
+50	71.29	0.652	0.213	35.66	VALID
+30	52.66	0.586	0.253	33.68	VALID
+10	29.52	0.345	0.370	28.98	RUSAK
+5	22.25	0.303	0.362	25.15	RUSAK
+1	18.61	0.274	0.349	22.10	RUSAK
+
+
+Grafik nilai NC dan BER terhadap QF disajikan pada gambar berikut.
+<img width="750" height="322" alt="image" src="https://github.com/user-attachments/assets/1ec6f8ac-40e1-40d7-a2de-927976bd1458" />
+
+# Analisis Hasil
+Pada QF 90, 70, 50, dan 30, watermark masih dapat diekstrak dengan baik karena nilai NC tetap di atas 0,5 dan BER di bawah 0,3. Bentuk watermark berupa logo burung Twitter masih dapat dikenali secara visual pada keempat QF tersebut, meskipun mulai muncul gangguan pada area tepi seiring turunnya QF.
+Pada QF 10, nilai NC turun menjadi 0,345 yang sudah di bawah threshold dan BER mencapai 0,370 yang sudah melampaui batas 0,3. Pada titik ini sebagian besar bit watermark sudah salah dan logo burung tidak lagi dapat dikenali secara visual, sehingga watermark dianggap rusak. Pada QF ini citra wajah juga mulai memperlihatkan blocking artifact yang khas dari kompresi JPEG agresif.
+Pada QF 5 dan 1, baik NC maupun BER tetap melewati threshold dan pola yang muncul pada hasil ekstraksi sudah berupa noise acak tanpa bentuk yang dikenali. Citra wajah pada QF 1 sudah mengalami posterisasi dengan blocking yang sangat jelas.
+Dengan demikian, batas QF yang masih aman untuk skema watermarking ini adalah QF 30 ke atas. Watermark gagal diekstrak ketika QF turun ke 10 atau di bawahnya.
+
+# Visualisasi per QF
+Citra ber-watermark pada setiap QF serta hasil ekstraksi watermark-nya disajikan pada dua gambar berikut. Gambar pertama untuk QF yang masih valid (QF 90, 70, 50, 30), gambar kedua untuk QF yang menyebabkan watermark rusak (QF 10, 5, 1).
+
+<img width="656" height="1125" alt="image" src="https://github.com/user-attachments/assets/a2b088a3-dcb6-4f59-8a06-648b146a71a3" />
+<img width="656" height="844" alt="image" src="https://github.com/user-attachments/assets/2ecf92cb-2f8c-4945-859c-1195cc023d4f" />
+
+# Kesimpulan
+Skema watermarking berbasis DCT yang diimplementasikan tahan terhadap kompresi JPEG hingga QF 30. Pada QF 10 atau lebih rendah, watermark tidak lagi dapat diekstrak karena NC turun di bawah 0,5 dan BER melampaui 0,3. Hal ini sesuai dengan karakteristik kompresi JPEG yang memperbesar kuantisasi koefisien DCT ketika QF turun, sehingga modifikasi halus pada koefisien mid-frequency yang menjadi pembawa watermark menjadi terlalu kecil untuk dapat diinterpretasikan kembali.
+
